@@ -1,0 +1,1213 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BentoRBXM — Vibrant FBX to Roblox 3D Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        * { touch-action: manipulation; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #050814;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Ambient colorful studio backdrop */
+        .ambient-orb-1 {
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.28) 0%, rgba(139, 92, 246, 0) 70%);
+        }
+        .ambient-orb-2 {
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.24) 0%, rgba(6, 182, 212, 0) 70%);
+        }
+        .ambient-orb-3 {
+            background: radial-gradient(circle, rgba(244, 63, 94, 0.20) 0%, rgba(244, 63, 94, 0) 70%);
+        }
+
+        /* Bento frosted glass surface */
+        .bento-glass {
+            background: rgba(12, 18, 36, 0.78);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .bento-tile {
+            background: rgba(20, 29, 56, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+        .bento-tile:hover {
+            border-color: rgba(168, 85, 247, 0.45);
+            background: rgba(27, 38, 72, 0.82);
+        }
+
+        /* Custom sleek scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #8b5cf6, #06b6d4);
+            border-radius: 999px;
+        }
+
+        /* Mobile bottom sheet smooth slide */
+        .mobile-drawer {
+            transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .mobile-drawer.minimized {
+            transform: translateY(calc(100% - 68px));
+        }
+
+        /* Range input styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(30, 41, 59, 0.9);
+            height: 6px;
+            border-radius: 999px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a855f7, #06b6d4);
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.65);
+        }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body class="h-full w-full flex flex-col select-none text-slate-100 relative">
+
+    <!-- Colorful Ambient Studio Glows -->
+    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div class="ambient-orb-1 absolute -top-32 -left-24 w-96 h-96 rounded-full blur-2xl"></div>
+        <div class="ambient-orb-2 absolute top-1/3 -right-24 w-96 h-96 rounded-full blur-2xl"></div>
+        <div class="ambient-orb-3 absolute -bottom-32 left-1/3 w-96 h-96 rounded-full blur-2xl"></div>
+    </div>
+
+    <!-- Top Bento Header -->
+    <header class="relative z-30 h-16 px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0">
+        <div class="bento-glass rounded-2xl px-3.5 py-2 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-violet-500/30 shrink-0">
+                <i data-lucide="boxes" class="w-5 h-5 text-white"></i>
+            </div>
+            <div class="leading-tight">
+                <div class="flex items-center gap-2">
+                    <span class="font-extrabold text-sm sm:text-base tracking-tight bg-gradient-to-r from-violet-300 via-cyan-200 to-pink-300 bg-clip-text text-transparent">
+                        BentoRBXM
+                    </span>
+                    <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+                        FBX → RBXM
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-400 hidden md:block">Vibrant 3D Model Studio & Roblox Exporter</p>
+            </div>
+        </div>
+
+        <!-- Quick Action Pills -->
+        <div class="flex items-center gap-2">
+            <button id="btn-sample-car" type="button" class="bento-glass hover:border-amber-400/50 px-3 py-2 rounded-2xl text-xs font-bold text-amber-200 flex items-center gap-1.5 transition cursor-pointer">
+                <i data-lucide="car-front" class="w-4 h-4 text-amber-400"></i>
+                <span class="hidden sm:inline">Demo Car</span>
+            </button>
+
+            <label for="fbx-file-input" class="px-4 py-2 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 hover:brightness-110 active:scale-[0.99] shadow-lg shadow-fuchsia-600/30 flex items-center gap-1.5 cursor-pointer transition">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                <span>Upload FBX</span>
+            </label>
+            <input id="fbx-file-input" type="file" accept=".fbx" class="hidden">
+        </div>
+    </header>
+
+    <!-- Main Full-Screen Interactive Studio -->
+    <main id="drop-zone" class="relative z-10 flex-1 w-full h-full overflow-hidden">
+        <!-- 3D Three.js Canvas -->
+        <div id="viewport-canvas" class="absolute inset-0 w-full h-full z-0"></div>
+
+        <!-- Drag & Drop Overlay -->
+        <div id="drop-overlay" class="hidden absolute inset-4 z-40 rounded-3xl border-2 border-dashed border-cyan-400 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center gap-3 pointer-events-none">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center shadow-xl">
+                <i data-lucide="file-up" class="w-8 h-8 text-white"></i>
+            </div>
+            <p class="text-base font-bold text-white">Drop your .FBX file anywhere</p>
+            <p class="text-xs text-cyan-300">Binary & ASCII FBX supported</p>
+        </div>
+
+        <!-- Top-Left Bento Stats Strip -->
+        <div class="absolute top-2 left-3 sm:left-5 z-20 flex flex-wrap items-center gap-2 max-w-[calc(100%-5rem)] md:max-w-md pointer-events-none">
+            <div class="bento-glass rounded-2xl px-3 py-1.5 flex items-center gap-2 pointer-events-auto">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="stat-model-name" class="text-xs font-bold text-white truncate max-w-[120px] sm:max-w-[170px]">CyberGT_Demo</span>
+            </div>
+            <div class="bento-glass rounded-2xl px-3 py-1.5 text-[11px] font-mono text-cyan-300">
+                <span id="stat-parts">0</span> parts
+            </div>
+            <div class="bento-glass rounded-2xl px-3 py-1.5 text-[11px] font-mono text-fuchsia-300">
+                <span id="stat-tris">0</span> tris
+            </div>
+        </div>
+
+        <!-- Top-Right Floating Camera & View Controls -->
+        <div class="absolute top-2 right-3 sm:right-5 z-20 flex flex-col gap-2">
+            <button id="btn-frame-up" type="button" title="Center & Shift Model Up" class="bento-glass hover:border-cyan-400/60 p-2.5 rounded-2xl text-cyan-300 transition cursor-pointer">
+                <i data-lucide="scan" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-view-top" type="button" title="Top Camera View" class="bento-glass hover:border-violet-400/60 p-2.5 rounded-2xl text-violet-300 transition cursor-pointer">
+                <i data-lucide="arrow-down-to-line" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-view-side" type="button" title="Side Profile View" class="bento-glass hover:border-pink-400/60 p-2.5 rounded-2xl text-pink-300 transition cursor-pointer">
+                <i data-lucide="move-horizontal" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-toggle-grid" type="button" title="Toggle Studio Grid" class="bento-glass hover:border-emerald-400/60 p-2.5 rounded-2xl text-emerald-300 transition cursor-pointer">
+                <i data-lucide="grid" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Responsive Bento Inspector & Exporter (Bottom Sheet on Mobile, Right Bento Column on Desktop) -->
+        <aside id="bento-drawer" class="mobile-drawer bento-glass fixed md:static bottom-0 left-0 right-0 md:w-[410px] lg:w-[440px] md:h-[calc(100%-1.5rem)] md:my-3 md:mr-4 md:ml-auto rounded-t-3xl md:rounded-3xl z-30 flex flex-col max-h-[68vh] md:max-h-none shadow-2xl">
+            
+            <!-- Mobile Grab Handle -->
+            <button id="drawer-toggle-btn" type="button" class="md:hidden w-full pt-2.5 pb-2 px-4 flex flex-col items-center justify-center border-b border-slate-800/80 shrink-0 cursor-pointer">
+                <span class="w-11 h-1.5 rounded-full bg-slate-600/90 mb-1.5"></span>
+                <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+                    <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    Bento Controls & RBXM Export
+                </span>
+            </button>
+
+            <!-- Bento Navigation Tabs -->
+            <div class="p-3 pb-2 grid grid-cols-3 gap-2 shrink-0">
+                <button data-tab="export" type="button" class="bento-tab active-tab py-2 px-2.5 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="package-check" class="w-3.5 h-3.5"></i>
+                    <span>RBXM Export</span>
+                </button>
+                <button data-tab="style" type="button" class="bento-tab py-2 px-2.5 rounded-2xl text-xs font-bold bento-tile text-slate-300 flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    <span>Colors & FX</span>
+                </button>
+                <button data-tab="parts" type="button" class="bento-tab py-2 px-2.5 rounded-2xl text-xs font-bold bento-tile text-slate-300 flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Sub-Parts</span>
+                </button>
+            </div>
+
+            <!-- Scrollable Bento Content Area -->
+            <div class="flex-1 overflow-y-auto px-3 pb-4 space-y-3">
+
+                <!-- TAB 1: EXPORT BENTO GRID -->
+                <section id="panel-export" class="space-y-3">
+                    <!-- Format & Scale Bento Row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div class="bento-tile rounded-2xl p-3">
+                            <label for="export-format" class="block text-[11px] font-bold uppercase tracking-wider text-violet-300 mb-1.5">Output Format</label>
+                            <select id="export-format" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-cyan-400">
+                                <option value="rbxm" selected>Roblox (.rbxm XML)</option>
+                                <option value="obj">Wavefront (.obj)</option>
+                                <option value="stl">3D Print / Mesh (.stl)</option>
+                            </select>
+                        </div>
+
+                        <div class="bento-tile rounded-2xl p-3">
+                            <label for="rbxm-material" class="block text-[11px] font-bold uppercase tracking-wider text-cyan-300 mb-1.5">Roblox Material</label>
+                            <select id="rbxm-material" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-cyan-400">
+                                <option value="256" selected>SmoothPlastic</option>
+                                <option value="1088">Metal</option>
+                                <option value="1568">Neon</option>
+                                <option value="1552">Glass</option>
+                                <option value="512">Plastic</option>
+                                <option value="832">CorrodedMetal</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- RBXM Mode & Scale Tile -->
+                    <div class="bento-tile rounded-2xl p-3.5 space-y-3">
+                        <div>
+                            <label for="rbxm-mode" class="block text-[11px] font-bold uppercase tracking-wider text-pink-300 mb-1.5">RBXM Mesh Structure</label>
+                            <select id="rbxm-mode" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-pink-400">
+                                <option value="specialmesh-obj" selected>Part + SpecialMesh (Inline OBJ MeshData)</option>
+                                <option value="part-bounds">Part Assembly (CFrame + Bounds + Color3)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="font-semibold text-slate-200">Stud Scale Multiplier</span>
+                                <span id="scale-label" class="font-mono text-xs font-bold text-cyan-300">1.0x (3.57s/m)</span>
+                            </div>
+                            <input id="scale-slider" type="range" min="0.2" max="5.0" step="0.1" value="1.0" class="w-full">
+                        </div>
+
+                        <div class="pt-1 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Estimated Stud Size</span>
+                            <span id="stat-studs" class="font-mono font-semibold text-emerald-300">0.0 × 0.0 × 0.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Physics & Weld Toggles Bento Grid -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="bento-tile rounded-2xl p-2.5 flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer">
+                            <input id="opt-anchored" type="checkbox" checked class="w-4 h-4 accent-violet-500 rounded">
+                            <span class="text-[11px] font-bold text-slate-200">Anchored</span>
+                        </label>
+
+                        <label class="bento-tile rounded-2xl p-2.5 flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer">
+                            <input id="opt-collide" type="checkbox" checked class="w-4 h-4 accent-cyan-400 rounded">
+                            <span class="text-[11px] font-bold text-slate-200">CanCollide</span>
+                        </label>
+
+                        <label class="bento-tile rounded-2xl p-2.5 flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer">
+                            <input id="opt-welds" type="checkbox" checked class="w-4 h-4 accent-pink-500 rounded">
+                            <span class="text-[11px] font-bold text-slate-200">Weld Root</span>
+                        </label>
+                    </div>
+
+                    <!-- Primary Export CTA -->
+                    <button id="btn-export-now" type="button" class="w-full py-3.5 px-4 rounded-2xl font-extrabold text-sm text-white bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 hover:brightness-110 active:scale-[0.99] shadow-xl shadow-violet-600/30 flex items-center justify-center gap-2 transition cursor-pointer">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span id="export-btn-text">Generate & Download .RBXM</span>
+                    </button>
+                </section>
+
+                <!-- TAB 2: COLORS & FX BENTO GRID -->
+                <section id="panel-style" class="hidden space-y-3">
+                    <!-- Vibrant Color Themes -->
+                    <div class="bento-tile rounded-2xl p-3.5 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-fuchsia-300">Vibrant Color Themes</span>
+                            <span class="text-[11px] text-slate-400">Live 3D Tint</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <button data-theme="original" type="button" class="theme-btn py-2 px-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-white cursor-pointer">
+                                ✨ Original
+                            </button>
+                            <button data-theme="cyber" type="button" class="theme-btn py-2 px-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-fuchsia-600 to-cyan-500 text-white cursor-pointer">
+                                ⚡ Cyber Neon
+                            </button>
+                            <button data-theme="sunset" type="button" class="theme-btn py-2 px-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-rose-500 text-white cursor-pointer">
+                                🌅 Sunset Gold
+                            </button>
+                            <button data-theme="mint" type="button" class="theme-btn py-2 px-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 cursor-pointer">
+                                💎 Mint Chrome
+                            </button>
+                            <button data-theme="candy" type="button" class="theme-btn py-2 px-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-pink-500 to-violet-500 text-white cursor-pointer">
+                                🍭 Candy Pop
+                            </button>
+                            <button data-theme="stealth" type="button" class="theme-btn py-2 px-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-slate-700 to-zinc-900 border border-slate-500/40 text-slate-100 cursor-pointer">
+                                🖤 Stealth
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Tint & Explode Sliders -->
+                    <div class="bento-tile rounded-2xl p-3.5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-200">Custom Paint Tint</span>
+                            <input id="custom-tint-picker" type="color" value="#a855f7" class="w-9 h-7 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="font-semibold text-slate-200">Sub-Part Explode</span>
+                                <span id="explode-label" class="font-mono font-bold text-amber-300">0.0x</span>
+                            </div>
+                            <input id="explode-slider" type="range" min="0" max="2.5" step="0.05" value="0" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="font-semibold text-slate-200">Turntable Spin Speed</span>
+                                <span id="spin-label" class="font-mono font-bold text-violet-300">0.6x</span>
+                            </div>
+                            <input id="spin-slider" type="range" min="0" max="3" step="0.1" value="0.6" class="w-full">
+                        </div>
+                    </div>
+
+                    <!-- Viewport Effect Toggles -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="btn-fx-orbit" type="button" class="bento-tile rounded-2xl p-2.5 flex flex-col items-center gap-1 text-xs font-bold text-cyan-300 cursor-pointer">
+                            <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                            <span>Auto Spin</span>
+                        </button>
+                        <button id="btn-fx-wire" type="button" class="bento-tile rounded-2xl p-2.5 flex flex-col items-center gap-1 text-xs font-bold text-fuchsia-300 cursor-pointer">
+                            <i data-lucide="grid-2x2" class="w-4 h-4"></i>
+                            <span>Wireframe</span>
+                        </button>
+                        <button id="btn-fx-xray" type="button" class="bento-tile rounded-2xl p-2.5 flex flex-col items-center gap-1 text-xs font-bold text-emerald-300 cursor-pointer">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>X-Ray</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- TAB 3: SUB-PARTS INSPECTOR -->
+                <section id="panel-parts" class="hidden space-y-2.5">
+                    <div class="bento-tile rounded-2xl p-3 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-white">Detected Meshes</p>
+                            <p id="selected-part-label" class="text-[11px] font-mono text-cyan-300 truncate max-w-[230px]">Tap any part to highlight</p>
+                        </div>
+                        <button id="btn-show-all-parts" type="button" class="px-2.5 py-1.5 rounded-xl bg-violet-600/30 hover:bg-violet-600/50 border border-violet-400/40 text-[11px] font-bold text-violet-200 cursor-pointer">
+                            Show All
+                        </button>
+                    </div>
+
+                    <div id="parts-list" class="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5"></div>
+                </section>
+
+            </div>
+        </aside>
+    </main>
+
+    <!-- Progress Modal -->
+    <div id="progress-overlay" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bento-glass rounded-3xl p-6 w-full max-w-sm border border-violet-400/40 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center animate-spin">
+                    <i data-lucide="loader-2" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h3 id="progress-title" class="text-sm font-extrabold text-white">Converting Model</h3>
+                    <p id="progress-sub" class="text-xs text-slate-300">Building 3D geometry & XML...</p>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs font-mono mb-1.5">
+                    <span id="progress-stage" class="text-cyan-300">Step 1/3</span>
+                    <span id="progress-pct" class="text-fuchsia-300">15%</span>
+                </div>
+                <div class="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400 transition-all duration-200" style="width: 15%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-5 z-50 flex flex-col gap-2 w-[90vw] max-w-sm pointer-events-none"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+        import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+        import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+
+        // Scene & Viewport State
+        let scene, camera, renderer, controls, gridHelper;
+        let currentRoot = null;
+        let currentModelName = 'CyberGT_Demo';
+        let meshEntries = []; // { mesh, name, tris, verts, originalMat, basePos }
+        let selectedMesh = null;
+
+        let autoSpinEnabled = true;
+        let spinSpeed = 0.6;
+        let wireframeEnabled = false;
+        let xrayEnabled = false;
+
+        // DOM Elements
+        const viewportEl = document.getElementById('viewport-canvas');
+        const fileInput = document.getElementById('fbx-file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const dropOverlay = document.getElementById('drop-overlay');
+        const partsListEl = document.getElementById('parts-list');
+        const selectedPartLabel = document.getElementById('selected-part-label');
+
+        const statModelName = document.getElementById('stat-model-name');
+        const statParts = document.getElementById('stat-parts');
+        const statTris = document.getElementById('stat-tris');
+        const statStuds = document.getElementById('stat-studs');
+
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleLabel = document.getElementById('scale-label');
+        const explodeSlider = document.getElementById('explode-slider');
+        const explodeLabel = document.getElementById('explode-label');
+        const spinSlider = document.getElementById('spin-slider');
+        const spinLabel = document.getElementById('spin-label');
+        const exportFormatSelect = document.getElementById('export-format');
+        const exportBtnText = document.getElementById('export-btn-text');
+
+        // Initialize Three.js Studio
+        function initStudio() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x060916);
+            scene.fog = new THREE.FogExp2(0x060916, 0.0045);
+
+            const w = viewportEl.clientWidth || window.innerWidth;
+            const h = viewportEl.clientHeight || window.innerHeight;
+
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 3000);
+            camera.position.set(14, 11, 22);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.15;
+            viewportEl.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.06;
+
+            // Vibrant Multi-Color Studio Lighting
+            const hemi = new THREE.HemisphereLight(0xc4b5fd, 0x0f172a, 1.35);
+            scene.add(hemi);
+
+            const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+            keyLight.position.set(18, 28, 16);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.set(1024, 1024);
+            scene.add(keyLight);
+
+            const cyanRim = new THREE.DirectionalLight(0x22d3ee, 1.4);
+            cyanRim.position.set(-20, 12, -14);
+            scene.add(cyanRim);
+
+            const magentaFill = new THREE.PointLight(0xe879f9, 18, 60);
+            magentaFill.position.set(0, 8, -12);
+            scene.add(magentaFill);
+
+            gridHelper = new THREE.GridHelper(60, 36, 0x8b5cf6, 0x1e293b);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            window.addEventListener('resize', handleResize);
+            lucide.createIcons();
+
+            // Load a colorful procedural sports car immediately so the canvas feels alive
+            loadProceduralDemoCar();
+            animate();
+        }
+
+        function handleResize() {
+            const w = viewportEl.clientWidth || window.innerWidth;
+            const h = viewportEl.clientHeight || window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            if (currentRoot) frameModelAboveDrawer(currentRoot);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (currentRoot && autoSpinEnabled && spinSpeed > 0) {
+                currentRoot.rotation.y += 0.008 * spinSpeed;
+            }
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Frame model cleanly in the upper-middle visible area above mobile bottom sheets
+        function frameModelAboveDrawer(obj) {
+            if (!obj) return;
+            obj.updateMatrixWorld(true);
+            const box = new THREE.Box3().setFromObject(obj);
+            if (box.isEmpty()) return;
+
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            obj.position.x -= center.x;
+            obj.position.z -= center.z;
+            obj.position.y -= box.min.y;
+
+            obj.updateMatrixWorld(true);
+            const updatedBox = new THREE.Box3().setFromObject(obj);
+            const updatedSize = updatedBox.getSize(new THREE.Vector3());
+
+            const maxDim = Math.max(updatedSize.x, updatedSize.y, updatedSize.z, 2);
+            const fovRad = THREE.MathUtils.degToRad(camera.fov);
+            const dist = (maxDim / (2 * Math.tan(fovRad / 2))) * 2.15;
+
+            const isMobile = window.innerWidth < 768;
+            // Shift camera target downward slightly on mobile so the model sits higher on screen
+            const targetY = updatedSize.y * (isMobile ? 0.12 : 0.45);
+            const camY = targetY + dist * (isMobile ? 0.58 : 0.45);
+
+            camera.position.set(dist * 0.72, camY, dist * 0.85);
+            controls.target.set(0, targetY, 0);
+            controls.update();
+        }
+
+        // Built-in colorful sports car demo so users can test immediately
+        function loadProceduralDemoCar() {
+            clearCurrentModel();
+            currentModelName = 'CyberGT_Demo';
+
+            const group = new THREE.Group();
+            group.name = 'CyberGT_Demo';
+
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, roughness: 0.25, metalness: 0.65 });
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.15, metalness: 0.4 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.35, metalness: 0.5 });
+            const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85, metalness: 0.1 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.2, metalness: 0.85 });
+
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.85, 6.8), bodyMat);
+            chassis.name = 'Chassis_Body';
+            chassis.position.set(0, 0.95, 0);
+            group.add(chassis);
+
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.75, 3.2), cabinMat);
+            cabin.name = 'Glass_Cabin';
+            cabin.position.set(0, 1.72, -0.35);
+            group.add(cabin);
+
+            const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.14, 0.7), trimMat);
+            spoilerWing.name = 'Rear_Aero_Wing';
+            spoilerWing.position.set(0, 1.85, -3.05);
+            group.add(spoilerWing);
+
+            const wheelCoords = [
+                [-1.68, 0.65, 2.1],
+                [1.68, 0.65, 2.1],
+                [-1.68, 0.65, -2.1],
+                [1.68, 0.65, -2.1]
+            ];
+
+            wheelCoords.forEach(([x, y, z], idx) => {
+                const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.52, 24), tireMat);
+                tire.rotation.z = Math.PI / 2;
+                tire.position.set(x, y, z);
+                tire.name = `Tire_0${idx + 1}`;
+                group.add(tire);
+
+                const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.55, 16), rimMat);
+                rim.rotation.z = Math.PI / 2;
+                rim.position.set(x, y, z);
+                rim.name = `Alloy_Rim_0${idx + 1}`;
+                group.add(rim);
+            });
+
+            registerModel(group);
+        }
+
+        function clearCurrentModel() {
+            if (currentRoot) {
+                scene.remove(currentRoot);
+                currentRoot.traverse((node) => {
+                    if (node.isMesh) {
+                        node.geometry?.dispose();
+                        if (Array.isArray(node.material)) node.material.forEach((m) => m.dispose());
+                        else node.material?.dispose();
+                    }
+                });
+            }
+            currentRoot = null;
+            meshEntries = [];
+            selectedMesh = null;
+            selectedPartLabel.textContent = 'Tap any part to highlight';
+        }
+
+        function registerModel(rootObj) {
+            currentRoot = rootObj;
+            meshEntries = [];
+            let totalTris = 0;
+
+            rootObj.traverse((child) => {
+                if (child.isMesh && child.geometry) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+
+                    // Ensure standard material for rich tinting
+                    if (!child.material || child.material.type === 'MeshBasicMaterial') {
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: child.material?.color || 0x38bdf8,
+                            roughness: 0.4,
+                            metalness: 0.25
+                        });
+                    }
+
+                    const posAttr = child.geometry.attributes.position;
+                    const verts = posAttr ? posAttr.count : 0;
+                    const tris = child.geometry.index
+                        ? Math.floor(child.geometry.index.count / 3)
+                        : Math.floor(verts / 3);
+                    totalTris += tris;
+
+                    meshEntries.push({
+                        mesh: child,
+                        name: child.name || `Mesh_${meshEntries.length + 1}`,
+                        verts,
+                        tris,
+                        originalColor: child.material.color ? child.material.color.clone() : new THREE.Color(0xffffff),
+                        basePos: child.position.clone()
+                    });
+                }
+            });
+
+            scene.add(currentRoot);
+            frameModelAboveDrawer(currentRoot);
+
+            // Capture centered base positions for explode slider
+            meshEntries.forEach((entry) => {
+                entry.basePos = entry.mesh.position.clone();
+            });
+
+            explodeSlider.value = '0';
+            explodeLabel.textContent = '0.0x';
+            updateStats(totalTris);
+            renderPartsList();
+        }
+
+        function updateStats(totalTris) {
+            statModelName.textContent = currentModelName;
+            statParts.textContent = String(meshEntries.length);
+            statTris.textContent = totalTris.toLocaleString();
+
+            if (!currentRoot) {
+                statStuds.textContent = '0.0 × 0.0 × 0.0';
+                return;
+            }
+            currentRoot.updateMatrixWorld(true);
+            const box = new THREE.Box3().setFromObject(currentRoot);
+            const size = box.getSize(new THREE.Vector3());
+            const mult = parseFloat(scaleSlider.value) * 3.571;
+            statStuds.textContent = `${(size.x * mult).toFixed(1)} × ${(size.y * mult).toFixed(1)} × ${(size.z * mult).toFixed(1)}`;
+        }
+
+        function renderPartsList() {
+            partsListEl.innerHTML = '';
+            if (meshEntries.length === 0) {
+                partsListEl.innerHTML = '<div class="bento-tile rounded-2xl p-4 text-center text-xs text-slate-400">No sub-meshes detected.</div>';
+                return;
+            }
+
+            meshEntries.forEach((entry, idx) => {
+                const row = document.createElement('div');
+                const isSelected = selectedMesh === entry.mesh;
+                row.className = `bento-tile rounded-2xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer ${
+                    isSelected ? 'border-cyan-400 bg-cyan-950/35' : ''
+                }`;
+
+                const titleBtn = document.createElement('button');
+                titleBtn.type = 'button';
+                titleBtn.className = 'flex-1 text-left min-w-0 cursor-pointer';
+                titleBtn.innerHTML = `
+                    <div class="text-xs font-bold text-white truncate">${escapeHtml(entry.name)}</div>
+                    <div class="text-[10px] font-mono text-slate-400">${entry.tris.toLocaleString()} tris · ${entry.verts.toLocaleString()} verts</div>
+                `;
+                titleBtn.addEventListener('click', () => {
+                    selectedMesh = entry.mesh;
+                    selectedPartLabel.textContent = `Selected: ${entry.name}`;
+                    highlightSelectedMesh();
+                    renderPartsList();
+                });
+
+                const visBtn = document.createElement('button');
+                visBtn.type = 'button';
+                visBtn.title = 'Toggle Visibility';
+                visBtn.className = 'p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 cursor-pointer';
+                visBtn.innerHTML = `<i data-lucide="${entry.mesh.visible ? 'eye' : 'eye-off'}" class="w-3.5 h-3.5 ${entry.mesh.visible ? 'text-emerald-400' : 'text-rose-400'}"></i>`;
+                visBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    entry.mesh.visible = !entry.mesh.visible;
+                    renderPartsList();
+                });
+
+                row.appendChild(titleBtn);
+                row.appendChild(visBtn);
+                partsListEl.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+
+        function highlightSelectedMesh() {
+            meshEntries.forEach((entry) => {
+                const mat = entry.mesh.material;
+                if (mat && 'emissive' in mat) {
+                    if (entry.mesh === selectedMesh) {
+                        mat.emissive.setHex(0x06b6d4);
+                        mat.emissiveIntensity = 0.45;
+                    } else {
+                        mat.emissive.setHex(0x000000);
+                        mat.emissiveIntensity = 0;
+                    }
+                }
+            });
+        }
+
+        // FBX File Upload & Drag-and-Drop
+        function processFBXFile(file) {
+            if (!file) return;
+            if (!file.name.toLowerCase().endsWith('.fbx')) {
+                showToast('Please select a valid .fbx file.', 'error');
+                return;
+            }
+
+            currentModelName = file.name.replace(/\.fbx$/i, '') || 'Uploaded_Model';
+            showProgress('Reading FBX File', `Loading ${file.name}...`, 'Step 1/3', 20);
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                showProgress('Parsing 3D Mesh', 'Extracting geometry, normals & sub-parts...', 'Step 2/3', 60);
+                setTimeout(() => {
+                    try {
+                        const loader = new FBXLoader();
+                        const loadedObj = loader.parse(ev.target.result, '');
+                        clearCurrentModel();
+                        registerModel(loadedObj);
+                        hideProgress();
+                        showToast(`Loaded "${currentModelName}.fbx" (${meshEntries.length} parts)`, 'success');
+                    } catch (err) {
+                        console.error(err);
+                        hideProgress();
+                        showToast('Could not parse this FBX file.', 'error');
+                    }
+                }, 60);
+            };
+            reader.onerror = () => {
+                hideProgress();
+                showToast('File read error occurred.', 'error');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files?.[0]) processFBXFile(e.target.files[0]);
+            e.target.value = '';
+        });
+
+        ['dragenter', 'dragover'].forEach((evt) => {
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropOverlay.classList.remove('hidden');
+            });
+        });
+        ['dragleave', 'drop'].forEach((evt) => {
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropOverlay.classList.add('hidden');
+            });
+        });
+        dropZone.addEventListener('drop', (e) => {
+            const droppedFile = e.dataTransfer?.files?.[0];
+            if (droppedFile) processFBXFile(droppedFile);
+        });
+
+        document.getElementById('btn-sample-car').addEventListener('click', () => {
+            loadProceduralDemoCar();
+            showToast('Loaded colorful CyberGT_Demo car!', 'info');
+        });
+
+        // Color & FX Controls
+        const paletteMap = {
+            cyber: [0xec4899, 0x06b6d4, 0x8b5cf6, 0x38bdf8],
+            sunset: [0xf59e0b, 0xf97316, 0xf43f5e, 0xfacc15],
+            mint: [0x10b981, 0x2dd4bf, 0x34d399, 0x67e8f9],
+            candy: [0xf472b6, 0xc084fc, 0x60a5fa, 0xfb7185],
+            stealth: [0x1e293b, 0x334155, 0x0f172a, 0x475569]
+        };
+
+        document.querySelectorAll('.theme-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const theme = btn.getAttribute('data-theme');
+                meshEntries.forEach((entry, idx) => {
+                    const mat = entry.mesh.material;
+                    if (!mat || !mat.color) return;
+                    if (theme === 'original') {
+                        mat.color.copy(entry.originalColor);
+                        mat.metalness = 0.25;
+                        mat.roughness = 0.4;
+                    } else {
+                        const colors = paletteMap[theme] || [0x8b5cf6];
+                        mat.color.setHex(colors[idx % colors.length]);
+                        mat.metalness = theme === 'mint' || theme === 'sunset' ? 0.75 : 0.35;
+                        mat.roughness = theme === 'mint' ? 0.2 : 0.35;
+                    }
+                });
+                showToast(`Applied ${theme.toUpperCase()} theme`, 'success');
+            });
+        });
+
+        document.getElementById('custom-tint-picker').addEventListener('input', (e) => {
+            const hexVal = e.target.value;
+            meshEntries.forEach((entry) => {
+                if (entry.mesh.material?.color) {
+                    entry.mesh.material.color.set(hexVal);
+                }
+            });
+        });
+
+        explodeSlider.addEventListener('input', (e) => {
+            const factor = parseFloat(e.target.value);
+            explodeLabel.textContent = `${factor.toFixed(2)}x`;
+            if (!currentRoot) return;
+            currentRoot.updateMatrixWorld(true);
+            const rootCenter = new THREE.Box3().setFromObject(currentRoot).getCenter(new THREE.Vector3());
+
+            meshEntries.forEach((entry) => {
+                const dir = entry.basePos.clone().sub(rootCenter);
+                if (dir.lengthSq() < 0.0001) dir.set(0, 0.5, 0);
+                entry.mesh.position.copy(entry.basePos).addScaledVector(dir, factor);
+            });
+        });
+
+        spinSlider.addEventListener('input', (e) => {
+            spinSpeed = parseFloat(e.target.value);
+            spinLabel.textContent = `${spinSpeed.toFixed(1)}x`;
+        });
+
+        document.getElementById('btn-fx-orbit').addEventListener('click', () => {
+            autoSpinEnabled = !autoSpinEnabled;
+            showToast(`Auto Spin ${autoSpinEnabled ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        document.getElementById('btn-fx-wire').addEventListener('click', () => {
+            wireframeEnabled = !wireframeEnabled;
+            meshEntries.forEach((entry) => {
+                if (entry.mesh.material) entry.mesh.material.wireframe = wireframeEnabled;
+            });
+            showToast(`Wireframe ${wireframeEnabled ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        document.getElementById('btn-fx-xray').addEventListener('click', () => {
+            xrayEnabled = !xrayEnabled;
+            meshEntries.forEach((entry) => {
+                const mat = entry.mesh.material;
+                if (mat) {
+                    mat.transparent = xrayEnabled;
+                    mat.opacity = xrayEnabled ? 0.36 : 1.0;
+                    mat.depthWrite = !xrayEnabled;
+                }
+            });
+            showToast(`X-Ray Mode ${xrayEnabled ? 'ON' : 'OFF'}`, 'info');
+        });
+
+        document.getElementById('btn-show-all-parts').addEventListener('click', () => {
+            meshEntries.forEach((entry) => { entry.mesh.visible = true; });
+            renderPartsList();
+            showToast('All sub-parts visible', 'info');
+        });
+
+        // Quick Camera Angles
+        document.getElementById('btn-frame-up').addEventListener('click', () => {
+            if (currentRoot) frameModelAboveDrawer(currentRoot);
+        });
+
+        document.getElementById('btn-view-top').addEventListener('click', () => {
+            if (!currentRoot) return;
+            const box = new THREE.Box3().setFromObject(currentRoot);
+            const size = box.getSize(new THREE.Vector3());
+            const dist = Math.max(size.x, size.z, 4) * 1.9;
+            camera.position.set(0, dist, 0.01);
+            controls.target.set(0, size.y * 0.3, 0);
+            controls.update();
+        });
+
+        document.getElementById('btn-view-side').addEventListener('click', () => {
+            if (!currentRoot) return;
+            const box = new THREE.Box3().setFromObject(currentRoot);
+            const size = box.getSize(new THREE.Vector3());
+            const dist = Math.max(size.x, size.y, size.z, 4) * 1.8;
+            camera.position.set(dist, size.y * 0.65, 0);
+            controls.target.set(0, size.y * 0.35, 0);
+            controls.update();
+        });
+
+        document.getElementById('btn-toggle-grid').addEventListener('click', () => {
+            if (gridHelper) gridHelper.visible = !gridHelper.visible;
+        });
+
+        // Scale & Format Labels
+        scaleSlider.addEventListener('input', () => {
+            const val = parseFloat(scaleSlider.value);
+            scaleLabel.textContent = `${val.toFixed(1)}x (${(val * 3.571).toFixed(2)}s/m)`;
+            const totalTris = meshEntries.reduce((acc, item) => acc + item.tris, 0);
+            updateStats(totalTris);
+        });
+
+        exportFormatSelect.addEventListener('change', () => {
+            const fmt = exportFormatSelect.value.toUpperCase();
+            exportBtnText.textContent = `Generate & Download .${fmt}`;
+        });
+
+        // Tab Switching & Mobile Bottom Sheet
+        document.querySelectorAll('.bento-tab').forEach((tabBtn) => {
+            tabBtn.addEventListener('click', () => {
+                const targetTab = tabBtn.getAttribute('data-tab');
+                document.querySelectorAll('.bento-tab').forEach((b) => {
+                    b.className = 'bento-tab py-2 px-2.5 rounded-2xl text-xs font-bold bento-tile text-slate-300 flex items-center justify-center gap-1.5 cursor-pointer';
+                });
+                tabBtn.className = 'bento-tab active-tab py-2 px-2.5 rounded-2xl text-xs font-extrabold bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow flex items-center justify-center gap-1.5 cursor-pointer';
+
+                document.getElementById('panel-export').classList.toggle('hidden', targetTab !== 'export');
+                document.getElementById('panel-style').classList.toggle('hidden', targetTab !== 'style');
+                document.getElementById('panel-parts').classList.toggle('hidden', targetTab !== 'parts');
+            });
+        });
+
+        const bentoDrawer = document.getElementById('bento-drawer');
+        document.getElementById('drawer-toggle-btn').addEventListener('click', () => {
+            bentoDrawer.classList.toggle('minimized');
+            setTimeout(() => { if (currentRoot) frameModelAboveDrawer(currentRoot); }, 340);
+        });
+
+        // Export Engine (.rbxm, .obj, .stl)
+        document.getElementById('btn-export-now').addEventListener('click', () => {
+            if (!currentRoot || meshEntries.length === 0) {
+                showToast('No 3D meshes available to export.', 'error');
+                return;
+            }
+            const fmt = exportFormatSelect.value;
+            showProgress(`Exporting .${fmt.toUpperCase()}`, 'Preparing model data...', 'Step 1/3', 25);
+
+            setTimeout(() => {
+                try {
+                    if (fmt === 'rbxm') {
+                        buildAndDownloadRBXM();
+                    } else if (fmt === 'obj') {
+                        const exporter = new OBJExporter();
+                        const objText = exporter.parse(currentRoot);
+                        hideProgress();
+                        triggerBlobDownload(new Blob([objText], { type: 'text/plain;charset=utf-8' }), `${sanitizeName(currentModelName)}.obj`);
+                        showToast(`Downloaded ${sanitizeName(currentModelName)}.obj`, 'success');
+                    } else if (fmt === 'stl') {
+                        const exporter = new STLExporter();
+                        const stlBuffer = exporter.parse(currentRoot, { binary: true });
+                        hideProgress();
+                        triggerBlobDownload(new Blob([stlBuffer], { type: 'application/octet-stream' }), `${sanitizeName(currentModelName)}.stl`);
+                        showToast(`Downloaded ${sanitizeName(currentModelName)}.stl`, 'success');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    hideProgress();
+                    showToast('Export failed: ' + err.message, 'error');
+                }
+            }, 60);
+        });
+
+        function buildAndDownloadRBXM() {
+            showProgress('Building Roblox XML', 'Encoding CFrames, colors & mesh geometry...', 'Step 2/3', 70);
+
+            const mode = document.getElementById('rbxm-mode').value;
+            const materialToken = document.getElementById('rbxm-material').value;
+            const anchored = document.getElementById('opt-anchored').checked;
+            const canCollide = document.getElementById('opt-collide').checked;
+            const addWelds = document.getElementById('opt-welds').checked;
+            const studFactor = parseFloat(scaleSlider.value) * 3.571;
+
+            currentRoot.updateMatrixWorld(true);
+            const objExporter = new OBJExporter();
+
+            const partChunks = [];
+            const weldChunks = [];
+            let index = 0;
+
+            meshEntries.forEach((entry) => {
+                const mesh = entry.mesh;
+                if (!mesh.visible || !mesh.geometry) return;
+                index++;
+
+                const refId = `RBX_Part_${index}`;
+                const pos = new THREE.Vector3();
+                const quat = new THREE.Quaternion();
+                const scl = new THREE.Vector3();
+                mesh.matrixWorld.decompose(pos, quat, scl);
+
+                pos.multiplyScalar(studFactor);
+                scl.multiplyScalar(studFactor);
+
+                const rotMat = new THREE.Matrix3().setFromQuaternion(quat);
+                const e = rotMat.elements;
+
+                mesh.geometry.computeBoundingBox();
+                const bboxSize = new THREE.Vector3();
+                mesh.geometry.boundingBox.getSize(bboxSize);
+
+                const partSize = new THREE.Vector3(
+                    Math.max(bboxSize.x * scl.x, 0.05),
+                    Math.max(bboxSize.y * scl.y, 0.05),
+                    Math.max(bboxSize.z * scl.z, 0.05)
+                );
+
+                let colorUint8 = 10724259;
+                const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+                if (mat?.color) {
+                    const r = Math.min(255, Math.max(0, Math.round(mat.color.r * 255)));
+                    const g = Math.min(255, Math.max(0, Math.round(mat.color.g * 255)));
+                    const b = Math.min(255, Math.max(0, Math.round(mat.color.b * 255)));
+                    colorUint8 = (r << 16) | (g << 8) | b;
+                }
+
+                const specialMeshXml = mode === 'specialmesh-obj'
+                    ? `
+            <Item class="SpecialMesh" referent="RBX_Mesh_${index}">
+                <Properties>
+                    <token name="MeshType">5</token>
+                    <string name="Name">Mesh</string>
+                    <string name="MeshData">${escapeXml(objExporter.parse(mesh))}</string>
+                    <Vector3 name="Scale">
+                        <X>${scl.x.toFixed(4)}</X>
+                        <Y>${scl.y.toFixed(4)}</Y>
+                        <Z>${scl.z.toFixed(4)}</Z>
+                    </Vector3>
+                </Properties>
+            </Item>`
+                    : '';
+
+                partChunks.push(`
+        <Item class="Part" referent="${refId}">
+            <Properties>
+                <string name="Name">${escapeXml(entry.name)}</string>
+                <bool name="Anchored">${anchored}</bool>
+                <bool name="CanCollide">${canCollide}</bool>
+                <bool name="CastShadow">true</bool>
+                <token name="Material">${materialToken}</token>
+                <Color3uint8 name="Color3uint8">${colorUint8}</Color3uint8>
+                <Vector3 name="Size">
+                    <X>${partSize.x.toFixed(4)}</X>
+                    <Y>${partSize.y.toFixed(4)}</Y>
+                    <Z>${partSize.z.toFixed(4)}</Z>
+                </Vector3>
+                <CoordinateFrame name="CFrame">
+                    <X>${pos.x.toFixed(4)}</X>
+                    <Y>${pos.y.toFixed(4)}</Y>
+                    <Z>${pos.z.toFixed(4)}</Z>
+                    <R00>${e[0].toFixed(5)}</R00><R01>${e[3].toFixed(5)}</R01><R02>${e[6].toFixed(5)}</R02>
+                    <R10>${e[1].toFixed(5)}</R10><R11>${e[4].toFixed(5)}</R11><R12>${e[7].toFixed(5)}</R12>
+                    <R20>${e[2].toFixed(5)}</R20><R21>${e[5].toFixed(5)}</R21><R22>${e[8].toFixed(5)}</R22>
+                </CoordinateFrame>
+            </Properties>${specialMeshXml}
+        </Item>`);
+
+                if (addWelds && index > 1) {
+                    weldChunks.push(`
+        <Item class="WeldConstraint" referent="RBX_Weld_${index}">
+            <Properties>
+                <string name="Name">Weld_${escapeXml(entry.name)}</string>
+                <Ref name="Part0">RBX_Part_1</Ref>
+                <Ref name="Part1">${refId}</Ref>
+            </Properties>
+        </Item>`);
+                }
+            });
+
+            showProgress('Packaging File', 'Creating download stream...', 'Step 3/3', 95);
+
+            const header = `<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+    <External>null</External>
+    <External>nil</External>
+    <Item class="Model" referent="RBX_Root">
+        <Properties>
+            <string name="Name">${escapeXml(currentModelName)}</string>
+        </Properties>`;
+            const footer = `\n    </Item>\n</roblox>`;
+
+            const blob = new Blob([header, ...partChunks, ...weldChunks, footer], { type: 'application/octet-stream' });
+            const filename = `${sanitizeName(currentModelName)}.rbxm`;
+
+            hideProgress();
+            triggerBlobDownload(blob, filename);
+            showToast(`Exported ${filename} (${index} parts)`, 'success');
+        }
+
+        function triggerBlobDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            setTimeout(() => URL.revokeObjectURL(url), 1200);
+        }
+
+        function sanitizeName(str) {
+            return (str || 'Roblox_Model').replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function escapeXml(str) {
+            return String(str).replace(/[<>&'"]/g, (ch) => {
+                if (ch === '<') return '&lt;';
+                if (ch === '>') return '&gt;';
+                if (ch === '&') return '&amp;';
+                if (ch === '\'') return '&apos;';
+                return '&quot;';
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[<>&"]/g, (ch) => {
+                if (ch === '<') return '&lt;';
+                if (ch === '>') return '&gt;';
+                if (ch === '&') return '&amp;';
+                return '&quot;';
+            });
+        }
+
+        function showProgress(title, sub, stage, pct) {
+            document.getElementById('progress-title').textContent = title;
+            document.getElementById('progress-sub').textContent = sub;
+            document.getElementById('progress-stage').textContent = stage;
+            document.getElementById('progress-pct').textContent = `${pct}%`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-overlay').classList.remove('hidden');
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-overlay').classList.add('hidden');
+        }
+
+        function showToast(message, kind = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const tone = kind === 'error'
+                ? 'bg-rose-950/90 border-rose-500/50 text-rose-200'
+                : kind === 'success'
+                    ? 'bg-emerald-950/90 border-emerald-400/50 text-emerald-200'
+                    : 'bg-slate-900/90 border-cyan-400/40 text-cyan-100';
+
+            toast.className = `bento-glass border ${tone} rounded-2xl px-3.5 py-2.5 text-xs font-semibold shadow-xl flex items-center gap-2 pointer-events-auto`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.25s ease';
+                setTimeout(() => toast.remove(), 260);
+            }, 2800);
+        }
+
+        initStudio();
+    </script>
+</body>
+</html>
+```
